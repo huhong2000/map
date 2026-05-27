@@ -106,8 +106,9 @@ display:none;
 
 <div class="info-row">
 <div class="value" id="distance">
-0.00 km&nbsp;&nbsp;
 <span id="temp">--°C</span>
+&nbsp;&nbsp;
+0.00 km
 </div>
 </div>
 
@@ -398,7 +399,7 @@ lng
 totalDistance += dist;
 
 distanceText.innerHTML =
-`${totalDistance.toFixed(2)} km&nbsp;&nbsp;<span id="temp">${tempText.innerHTML}</span>`;
+`<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
 
 }
 
