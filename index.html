@@ -79,12 +79,6 @@ margin-bottom:16px;
 
 }
 
-.title{
-font-size:24px;
-font-weight:800;
-margin-bottom:10px;
-}
-
 .address{
 font-size:18px;
 font-weight:700;
@@ -120,10 +114,6 @@ display:none;
 </div>
 
 <div class="line"></div>
-
-<div class="title">
-📍 실시간 위치
-</div>
 
 <div class="address" id="address">
 RTIRL 연결중...
@@ -231,22 +221,7 @@ maxZoom:19
 ).addTo(map);
 
 //////////////////////////////////////////////////
-// 위치 마커
-
-const marker =
-L.circleMarker(
-[37.5665,126.9780],
-{
-radius:10,
-color:'#fff',
-weight:4,
-fillColor:'#2A7FFF',
-fillOpacity:1
-}
-).addTo(map);
-
-//////////////////////////////////////////////////
-// 이동 경로
+// 이동 경로만 표시
 
 const path = [];
 
@@ -339,10 +314,6 @@ map.flyTo(
 animate:true,
 duration:1.5
 }
-);
-
-marker.setLatLng(
-[lat,lng]
 );
 
 //////////////////////////////////////////////////
