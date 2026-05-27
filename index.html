@@ -39,7 +39,7 @@ padding:18px;
 #time{
 font-size:15px;
 font-weight:700;
-line-height:1.45;
+line-height:1.4;
 color:#03c75a;
 margin-bottom:10px;
 }
@@ -51,19 +51,20 @@ margin-bottom:14px;
 }
 
 .address{
-font-size:18px;
+font-size:22px;
 font-weight:800;
-line-height:1.25;
+line-height:1.1;
+margin-bottom:8px;
 }
 
 .info-row{
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-top:8px;
+margin-top:4px;
 font-size:16px;
 font-weight:700;
-line-height:1.2;
+line-height:1.1;
 }
 
 .label{
@@ -104,17 +105,16 @@ display:none;
 <div class="line"></div>
 
 <div class="address" id="address">
-📍 현재위치 확인중...
+위치 확인중...
 </div>
 
 <div class="info-row">
 <div class="label">현재기온</div>
-<div class="value" id="temp">광명시</div>
+<div class="value" id="temp">--°C</div>
 </div>
 
 <div class="info-row">
-<div class="label">주행거리</div>
-<div class="value" id="distance">0.0 km</div>
+<div class="value" id="distance">0.00 km</div>
 </div>
 
 </div>
@@ -286,11 +286,14 @@ return R * c;
 }
 
 //////////////////////////////////////////////////
-// 주소 가져오기
+// 주소 + 실제 온도 가져오기
 
 async function updateAddress(lat,lng){
 
 try{
+
+//////////////////////////////////////////////////
+// 주소
 
 const res = await fetch(
 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
@@ -303,23 +306,34 @@ const city =
 data.address.city ||
 data.address.town ||
 data.address.county ||
-'서울특별시';
+'광명시';
 
-const suburb =
-data.address.suburb ||
-data.address.neighbourhood ||
-'';
+//////////////////////////////////////////////////
+// 도시 표시
 
 address.innerHTML =
-`📍 현재위치 ${city}<br>${suburb}`;
+`${city}`;
+
+//////////////////////////////////////////////////
+// 실제 온도 가져오기
+
+const weatherRes = await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
+);
+
+const weatherData =
+await weatherRes.json();
+
+const temp =
+weatherData.current.temperature_2m;
 
 tempText.innerHTML =
-city;
+`${temp}°C`;
 
 }catch(e){
 
 address.innerHTML =
-'📍 주소 확인 실패';
+'주소 확인 실패';
 
 }
 
