@@ -23,10 +23,52 @@ background:transparent;
 font-family:sans-serif;
 }
 
-#map{
+body{
 width:100vw;
 height:100vh;
 }
+
+//////////////////////////////////////////////////
+// 전체 배경 지도
+
+#bgMap{
+position:fixed;
+left:0;
+top:0;
+width:100vw;
+height:100vh;
+z-index:1;
+}
+
+//////////////////////////////////////////////////
+// 오른쪽 미니 지도
+
+#miniMap{
+
+position:fixed;
+
+right:20px;
+top:20px;
+
+width:340px;
+height:340px;
+
+border-radius:28px;
+
+overflow:hidden;
+
+z-index:9999;
+
+box-shadow:
+0 8px 30px rgba(0,0,0,0.25);
+
+border:
+2px solid rgba(255,255,255,0.5);
+
+}
+
+//////////////////////////////////////////////////
+// 왼쪽 정보창
 
 .overlay{
 
@@ -80,16 +122,26 @@ margin-bottom:16px;
 }
 
 .address{
-font-size:18px;
-font-weight:700;
-margin-top:10px;
+
+font-size:22px;
+font-weight:800;
+
+line-height:1.5;
+
+color:#111;
+
 }
 
 .status{
-margin-top:12px;
+
+margin-top:14px;
+
 font-size:14px;
-color:#03c75a;
+
 font-weight:700;
+
+color:#03c75a;
+
 }
 
 .leaflet-control-attribution{
@@ -105,7 +157,18 @@ display:none;
 
 <body>
 
-<div id="map"></div>
+//////////////////////////////////////////////////
+// 배경 지도
+
+<div id="bgMap"></div>
+
+//////////////////////////////////////////////////
+// 오른쪽 미니 지도
+
+<div id="miniMap"></div>
+
+//////////////////////////////////////////////////
+// 왼쪽 정보 카드
 
 <div class="overlay">
 
@@ -115,11 +178,17 @@ display:none;
 
 <div class="line"></div>
 
-<div class="address" id="address">
-RTIRL 연결중...
+<div
+class="address"
+id="address"
+>
+위치 연결중...
 </div>
 
-<div class="status" id="status">
+<div
+class="status"
+id="status"
+>
 대기중...
 </div>
 
@@ -130,7 +199,7 @@ RTIRL 연결중...
 <script>
 
 //////////////////////////////////////////////////
-// 현재 시간 표시
+// 시간 표시
 
 const time =
 document.getElementById("time");
@@ -165,13 +234,13 @@ setInterval(updateTime,1000);
 updateTime();
 
 //////////////////////////////////////////////////
-// 네 Pull Key
+// RTIRL Pull Key
 
 const pullKey =
 "8a7jul1r3kg4hd63";
 
 //////////////////////////////////////////////////
-// Firebase RTIRL 연결
+// Firebase 연결
 
 firebase.initializeApp({
 
@@ -198,30 +267,47 @@ const statusText =
 document.getElementById("status");
 
 //////////////////////////////////////////////////
-// 지도 생성
+// 배경 지도
 
-const map = L.map(
-'map',
+const bgMap = L.map(
+'bgMap',
 {
 zoomControl:false
 }
 ).setView(
 [37.5665,126.9780],
-16
+15
 );
-
-//////////////////////////////////////////////////
-// 지도 타일
 
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 {
 maxZoom:19
 }
-).addTo(map);
+).addTo(bgMap);
 
 //////////////////////////////////////////////////
-// 이동 경로만 표시
+// 오른쪽 미니 지도
+
+const miniMap = L.map(
+'miniMap',
+{
+zoomControl:false
+}
+).setView(
+[37.5665,126.9780],
+17
+);
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+maxZoom:19
+}
+).addTo(miniMap);
+
+//////////////////////////////////////////////////
+// 이동경로
 
 const path = [];
 
@@ -233,7 +319,22 @@ color:'#2A7FFF',
 weight:5,
 opacity:0.8
 }
-).addTo(map);
+).addTo(bgMap);
+
+//////////////////////////////////////////////////
+// 미니맵 핀
+
+const marker =
+L.circleMarker(
+[37.5665,126.9780],
+{
+radius:10,
+color:'#fff',
+weight:4,
+fillColor:'#2A7FFF',
+fillOpacity:1
+}
+).addTo(miniMap);
 
 //////////////////////////////////////////////////
 // 주소 가져오기
@@ -306,14 +407,34 @@ statusText.innerHTML =
 "실시간 연결됨";
 
 //////////////////////////////////////////////////
+// 배경 지도 이동
 
-map.flyTo(
+bgMap.flyTo(
+[lat,lng],
+15,
+{
+animate:true,
+duration:1.5
+}
+);
+
+//////////////////////////////////////////////////
+// 미니 지도 이동
+
+miniMap.flyTo(
 [lat,lng],
 17,
 {
 animate:true,
 duration:1.5
 }
+);
+
+//////////////////////////////////////////////////
+// 핀 이동
+
+marker.setLatLng(
+[lat,lng]
 );
 
 //////////////////////////////////////////////////
