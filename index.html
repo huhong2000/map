@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RTIRL 실시간 위치</title>
+<title>RTIRL 오버레이</title>
 
 <link
 rel="stylesheet"
@@ -15,88 +15,72 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"
 
 <style>
 
-html,body{
+*{
+box-sizing:border-box;
 margin:0;
 padding:0;
+}
+
+html,body{
+width:100%;
+height:100%;
 overflow:hidden;
 background:transparent;
-font-family:sans-serif;
-}
-
-body{
-width:100vw;
-height:100vh;
-}
-
-//////////////////////////////////////////////////
-// 전체 배경 지도
-
-#bgMap{
-position:fixed;
-left:0;
-top:0;
-width:100vw;
-height:100vh;
-z-index:1;
+font-family:
+-apple-system,
+BlinkMacSystemFont,
+'Segoe UI',
+sans-serif;
 }
 
 //////////////////////////////////////////////////
-// 오른쪽 미니 지도
+// 전체 래퍼
 
-#miniMap{
-
-position:fixed;
-
-right:20px;
-top:20px;
-
-width:340px;
-height:340px;
-
-border-radius:28px;
-
-overflow:hidden;
-
-z-index:9999;
-
-box-shadow:
-0 8px 30px rgba(0,0,0,0.25);
-
-border:
-2px solid rgba(255,255,255,0.5);
-
-}
-
-//////////////////////////////////////////////////
-// 왼쪽 정보창
-
-.overlay{
+.wrap{
 
 position:fixed;
 
 left:20px;
 top:20px;
 
-width:320px;
+display:flex;
+gap:18px;
 
-padding:18px;
-
-border-radius:24px;
-
-background:
-rgba(255,255,255,0.82);
-
-backdrop-filter:blur(12px);
-
--webkit-backdrop-filter:
-blur(12px);
-
-box-shadow:
-0 6px 30px rgba(0,0,0,0.18);
+align-items:flex-start;
 
 z-index:9999;
 
 }
+
+//////////////////////////////////////////////////
+// 왼쪽 정보 카드
+
+.overlay{
+
+width:320px;
+
+padding:20px;
+
+border-radius:28px;
+
+background:
+rgba(255,255,255,0.88);
+
+backdrop-filter:blur(14px);
+
+-webkit-backdrop-filter:
+blur(14px);
+
+box-shadow:
+0 8px 30px rgba(0,0,0,0.18);
+
+border:
+1px solid rgba(255,255,255,0.4);
+
+}
+
+//////////////////////////////////////////////////
+// 시간
 
 #time{
 
@@ -107,9 +91,11 @@ line-height:1.6;
 
 color:#03c75a;
 
-margin-bottom:14px;
+margin-bottom:16px;
 
 }
+
+//////////////////////////////////////////////////
 
 .line{
 
@@ -117,32 +103,63 @@ height:1px;
 
 background:#ddd;
 
-margin-bottom:16px;
+margin-bottom:18px;
 
 }
 
+//////////////////////////////////////////////////
+// 주소
+
 .address{
 
-font-size:22px;
+font-size:24px;
 font-weight:800;
 
 line-height:1.5;
 
 color:#111;
 
+margin-bottom:20px;
+
+word-break:keep-all;
+
 }
+
+//////////////////////////////////////////////////
+// 상태
 
 .status{
 
-margin-top:14px;
-
 font-size:14px;
-
 font-weight:700;
 
 color:#03c75a;
 
 }
+
+//////////////////////////////////////////////////
+// 오른쪽 지도 카드
+
+#miniMap{
+
+width:340px;
+height:340px;
+
+border-radius:28px;
+
+overflow:hidden;
+
+background:#fff;
+
+box-shadow:
+0 8px 30px rgba(0,0,0,0.18);
+
+border:
+1px solid rgba(255,255,255,0.4);
+
+}
+
+//////////////////////////////////////////////////
 
 .leaflet-control-attribution{
 display:none;
@@ -157,18 +174,10 @@ display:none;
 
 <body>
 
-//////////////////////////////////////////////////
-// 배경 지도
-
-<div id="bgMap"></div>
+<div class="wrap">
 
 //////////////////////////////////////////////////
-// 오른쪽 미니 지도
-
-<div id="miniMap"></div>
-
-//////////////////////////////////////////////////
-// 왼쪽 정보 카드
+// 왼쪽 카드
 
 <div class="overlay">
 
@@ -194,12 +203,44 @@ id="status"
 
 </div>
 
+//////////////////////////////////////////////////
+// 오른쪽 지도
+
+<div id="miniMap"></div>
+
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
 
 //////////////////////////////////////////////////
-// 시간 표시
+// RTIRL Pull Key
+
+const pullKey =
+"8a7jul1r3kg4hd63";
+
+//////////////////////////////////////////////////
+// Firebase
+
+firebase.initializeApp({
+
+apiKey:
+"AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
+
+databaseURL:
+"https://rtirl-a1d7f-default-rtdb.firebaseio.com",
+
+projectId:
+"rtirl-a1d7f",
+
+appId:
+"1:684852107701:web:d77a8ed0ee5095279a61fc"
+
+});
+
+//////////////////////////////////////////////////
+// 시간
 
 const time =
 document.getElementById("time");
@@ -234,31 +275,6 @@ setInterval(updateTime,1000);
 updateTime();
 
 //////////////////////////////////////////////////
-// RTIRL Pull Key
-
-const pullKey =
-"8a7jul1r3kg4hd63";
-
-//////////////////////////////////////////////////
-// Firebase 연결
-
-firebase.initializeApp({
-
-apiKey:
-"AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
-
-databaseURL:
-"https://rtirl-a1d7f-default-rtdb.firebaseio.com",
-
-projectId:
-"rtirl-a1d7f",
-
-appId:
-"1:684852107701:web:d77a8ed0ee5095279a61fc"
-
-});
-
-//////////////////////////////////////////////////
 
 const address =
 document.getElementById("address");
@@ -267,27 +283,7 @@ const statusText =
 document.getElementById("status");
 
 //////////////////////////////////////////////////
-// 배경 지도
-
-const bgMap = L.map(
-'bgMap',
-{
-zoomControl:false
-}
-).setView(
-[37.5665,126.9780],
-15
-);
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-maxZoom:19
-}
-).addTo(bgMap);
-
-//////////////////////////////////////////////////
-// 오른쪽 미니 지도
+// 지도
 
 const miniMap = L.map(
 'miniMap',
@@ -296,7 +292,7 @@ zoomControl:false
 }
 ).setView(
 [37.5665,126.9780],
-17
+16
 );
 
 L.tileLayer(
@@ -307,22 +303,7 @@ maxZoom:19
 ).addTo(miniMap);
 
 //////////////////////////////////////////////////
-// 이동경로
-
-const path = [];
-
-const polyline =
-L.polyline(
-path,
-{
-color:'#2A7FFF',
-weight:5,
-opacity:0.8
-}
-).addTo(bgMap);
-
-//////////////////////////////////////////////////
-// 미니맵 핀
+// 핀
 
 const marker =
 L.circleMarker(
@@ -337,7 +318,22 @@ fillOpacity:1
 ).addTo(miniMap);
 
 //////////////////////////////////////////////////
-// 주소 가져오기
+// 이동경로
+
+const path = [];
+
+const polyline =
+L.polyline(
+path,
+{
+color:'#2A7FFF',
+weight:5,
+opacity:0.9
+}
+).addTo(miniMap);
+
+//////////////////////////////////////////////////
+// 주소
 
 async function updateAddress(lat,lng){
 
@@ -374,7 +370,7 @@ address.innerHTML =
 }
 
 //////////////////////////////////////////////////
-// RTIRL 실시간 수신
+// RTIRL 실시간
 
 firebase.database()
 .ref()
@@ -407,19 +403,6 @@ statusText.innerHTML =
 "실시간 연결됨";
 
 //////////////////////////////////////////////////
-// 배경 지도 이동
-
-bgMap.flyTo(
-[lat,lng],
-15,
-{
-animate:true,
-duration:1.5
-}
-);
-
-//////////////////////////////////////////////////
-// 미니 지도 이동
 
 miniMap.flyTo(
 [lat,lng],
@@ -430,15 +413,11 @@ duration:1.5
 }
 );
 
-//////////////////////////////////////////////////
-// 핀 이동
-
 marker.setLatLng(
 [lat,lng]
 );
 
 //////////////////////////////////////////////////
-// 이동경로
 
 path.push([lat,lng]);
 
