@@ -1,42 +1,31 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RTIRL 네이버 스타일 위치 오버레이</title>
+<title>RTIRL 실시간 위치</title>
 
 <link
 rel="stylesheet"
 href="https://unpkg.com/leaflet/dist/leaflet.css"
 />
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
+
 <style>
 
-*{
-box-sizing:border-box;
+html,body{
 margin:0;
 padding:0;
-}
-
-body{
 overflow:hidden;
 background:transparent;
-
-font-family:
--apple-system,
-BlinkMacSystemFont,
-'Segoe UI',
-sans-serif;
+font-family:sans-serif;
 }
 
 #map{
-position:fixed;
-left:0;
-top:0;
 width:100vw;
 height:100vh;
-z-index:1;
 }
 
 .overlay{
@@ -46,110 +35,44 @@ position:fixed;
 left:20px;
 top:20px;
 
-width:340px;
+width:320px;
 
-padding:20px;
+padding:18px;
 
-border-radius:28px;
+border-radius:24px;
 
 background:
 rgba(255,255,255,0.82);
 
-backdrop-filter:blur(14px);
+backdrop-filter:blur(12px);
 
 -webkit-backdrop-filter:
-blur(14px);
+blur(12px);
 
 box-shadow:
-0 8px 30px rgba(0,0,0,0.2);
-
-border:
-1px solid rgba(255,255,255,0.4);
+0 6px 30px rgba(0,0,0,0.18);
 
 z-index:9999;
 
 }
 
-#time{
-
-font-size:15px;
-font-weight:700;
-
-line-height:1.6;
-
-color:#03c75a;
-
-margin-bottom:16px;
-
-}
-
-.line{
-
-height:1px;
-
-background:#ddd;
-
-margin-bottom:18px;
-
-}
-
 .title{
-
-display:flex;
-align-items:center;
-
-font-size:20px;
+font-size:24px;
 font-weight:800;
-
-color:#111;
-
-margin-bottom:12px;
-
-}
-
-.icon{
-
-font-size:28px;
-
-margin-right:8px;
-
-color:#03c75a;
-
+margin-bottom:10px;
 }
 
 .address{
-
-font-size:24px;
-font-weight:800;
-
-line-height:1.4;
-
-color:#111;
-
-margin-bottom:18px;
-
+font-size:18px;
+font-weight:700;
+margin-top:10px;
 }
 
 .status{
-
-font-size:14px;
-font-weight:700;
-
-color:#666;
-
 margin-top:12px;
-
-}
-
-#miniMap{
-
-width:100%;
-height:250px;
-
-border-radius:20px;
-
-overflow:hidden;
-
+font-size:14px;
+color:#03c75a;
+font-weight:700;
 }
 
 .leaflet-control-attribution{
@@ -169,28 +92,16 @@ display:none;
 
 <div class="overlay">
 
-<div id="time">
-시간 불러오는중...
-</div>
-
-<div class="line"></div>
-
 <div class="title">
-<div class="icon">📍</div>
-현재 위치
+📍 실시간 위치
 </div>
 
-<div
-class="address"
-id="address"
->
-위치 연결중...
+<div class="address" id="address">
+RTIRL 연결중...
 </div>
-
-<div id="miniMap"></div>
 
 <div class="status" id="status">
-RTIRL 연결중...
+대기중...
 </div>
 
 </div>
@@ -200,59 +111,43 @@ RTIRL 연결중...
 <script>
 
 //////////////////////////////////////////////////
-// RTIRL 설정
+// 네 Pull Key
 
-const PULL_KEY =
+const pullKey =
 "8a7jul1r3kg4hd63";
+
+//////////////////////////////////////////////////
+// Firebase RTIRL 연결
+
+firebase.initializeApp({
+
+apiKey:
+"AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
+
+databaseURL:
+"https://rtirl-a1d7f-default-rtdb.firebaseio.com",
+
+projectId:
+"rtirl-a1d7f",
+
+appId:
+"1:684852107701:web:d77a8ed0ee5095279a61fc"
+
+});
 
 //////////////////////////////////////////////////
 
 const address =
 document.getElementById("address");
 
-const time =
-document.getElementById("time");
-
 const statusText =
 document.getElementById("status");
 
 //////////////////////////////////////////////////
-// 시간
-
-function updateTime(){
-
-const now = new Date();
-
-const days = [
-'일요일',
-'월요일',
-'화요일',
-'수요일',
-'목요일',
-'금요일',
-'토요일'
-];
-
-time.innerHTML = `
-${now.getFullYear()}년
-${now.getMonth()+1}월
-${now.getDate()}일
-${days[now.getDay()]}
-<br>
-${now.toLocaleTimeString()}
-`;
-
-}
-
-setInterval(updateTime,1000);
-
-updateTime();
-
-//////////////////////////////////////////////////
-// 지도
+// 지도 생성
 
 const map = L.map(
-'miniMap',
+'map',
 {
 zoomControl:false
 }
@@ -260,6 +155,9 @@ zoomControl:false
 [37.5665,126.9780],
 16
 );
+
+//////////////////////////////////////////////////
+// 지도 타일
 
 L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -269,9 +167,10 @@ maxZoom:19
 ).addTo(map);
 
 //////////////////////////////////////////////////
-// 현재 위치 점
+// 위치 마커
 
-const marker = L.circleMarker(
+const marker =
+L.circleMarker(
 [37.5665,126.9780],
 {
 radius:10,
@@ -287,7 +186,8 @@ fillOpacity:1
 
 const path = [];
 
-const polyline = L.polyline(
+const polyline =
+L.polyline(
 path,
 {
 color:'#2A7FFF',
@@ -298,8 +198,6 @@ opacity:0.8
 
 //////////////////////////////////////////////////
 // 주소 가져오기
-
-let addressTimer = null;
 
 async function updateAddress(lat,lng){
 
@@ -336,35 +234,34 @@ address.innerHTML =
 }
 
 //////////////////////////////////////////////////
-// RTIRL 데이터 불러오기
+// RTIRL 실시간 수신
 
-async function fetchRTIRL(){
+firebase.database()
+.ref()
+.child("pullables")
+.child(pullKey)
+.child("location")
+.on("value", async(snapshot)=>{
 
-try{
+const location =
+snapshot.val();
 
+if(!location){
 statusText.innerHTML =
-'RTIRL 연결됨';
-
-const res = await fetch(
-`https://rtirl.com/api/last/${PULL_KEY}`
-);
-
-const data =
-await res.json();
-
-if(
-!data ||
-!data.latitude ||
-!data.longitude
-){
+"위치 데이터 없음";
 return;
 }
 
 const lat =
-parseFloat(data.latitude);
+location.latitude;
 
 const lng =
-parseFloat(data.longitude);
+location.longitude;
+
+//////////////////////////////////////////////////
+
+statusText.innerHTML =
+"실시간 연결됨";
 
 //////////////////////////////////////////////////
 
@@ -389,32 +286,13 @@ path.push([lat,lng]);
 polyline.setLatLngs(path);
 
 //////////////////////////////////////////////////
-// 주소 업데이트
 
-clearTimeout(addressTimer);
+await updateAddress(
+lat,
+lng
+);
 
-addressTimer =
-setTimeout(()=>{
-
-updateAddress(lat,lng);
-
-},1000);
-
-}catch(e){
-
-statusText.innerHTML =
-'RTIRL 연결 실패';
-
-}
-
-}
-
-//////////////////////////////////////////////////
-// 2초마다 위치 갱신
-
-setInterval(fetchRTIRL,2000);
-
-fetchRTIRL();
+});
 
 </script>
 
