@@ -18,81 +18,66 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"
 html,body{
 margin:0;
 padding:0;
-background:transparent;
+background:#f5f5f5;
 font-family:sans-serif;
-overflow:hidden;
 }
 
 .wrap{
-
-width:560px;
-height:300px;
-
-display:flex;
-
+width:340px;
+margin:20px auto;
 background:#fff;
-
 border-radius:24px;
-
 overflow:hidden;
-
 box-shadow:
 0 6px 30px rgba(0,0,0,0.15);
-
 }
 
 .info{
-
-width:48%;
-
-padding:22px;
-
-display:flex;
-flex-direction:column;
-justify-content:flex-start;
-
+padding:18px;
 }
 
 #time{
-
 font-size:15px;
 font-weight:700;
-line-height:1.6;
+line-height:1.45;
 color:#03c75a;
-margin-bottom:14px;
-
+margin-bottom:10px;
 }
 
 .line{
-
 height:1px;
 background:#e5e5e5;
-margin-bottom:18px;
-
+margin-bottom:14px;
 }
 
 .address{
-
-font-size:20px;
+font-size:18px;
 font-weight:800;
-line-height:1.5;
-
+line-height:1.25;
 }
 
-.status{
-
-margin-top:16px;
-font-size:15px;
-color:#03c75a;
+.info-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:8px;
+font-size:16px;
 font-weight:700;
+line-height:1.2;
+}
 
+.label{
+color:#222;
+}
+
+.value{
+color:#111;
+font-weight:800;
 }
 
 #map{
-
-width:52%;
-height:100%;
-
+width:100%;
+height:320px;
 }
 
 .leaflet-control-attribution{
@@ -119,11 +104,17 @@ display:none;
 <div class="line"></div>
 
 <div class="address" id="address">
-RTIRL 연결중...
+📍 현재위치 확인중...
 </div>
 
-<div class="status" id="status">
-대기중...
+<div class="info-row">
+<div class="label">현재기온</div>
+<div class="value" id="temp">광명시</div>
+</div>
+
+<div class="info-row">
+<div class="label">주행거리</div>
+<div class="value" id="distance">0.0 km</div>
 </div>
 
 </div>
@@ -201,8 +192,11 @@ appId:
 const address =
 document.getElementById("address");
 
-const statusText =
-document.getElementById("status");
+const tempText =
+document.getElementById("temp");
+
+const distanceText =
+document.getElementById("distance");
 
 //////////////////////////////////////////////////
 // 지도 생성
@@ -258,6 +252,40 @@ opacity:0.9
 ).addTo(map);
 
 //////////////////////////////////////////////////
+// 총 주행거리 계산
+
+let totalDistance = 0;
+let prevLatLng = null;
+
+function calculateDistance(lat1,lng1,lat2,lng2){
+
+const R = 6371;
+
+const dLat =
+(lat2-lat1) * Math.PI/180;
+
+const dLng =
+(lng2-lng1) * Math.PI/180;
+
+const a =
+Math.sin(dLat/2) *
+Math.sin(dLat/2) +
+Math.cos(lat1*Math.PI/180) *
+Math.cos(lat2*Math.PI/180) *
+Math.sin(dLng/2) *
+Math.sin(dLng/2);
+
+const c =
+2 * Math.atan2(
+Math.sqrt(a),
+Math.sqrt(1-a)
+);
+
+return R * c;
+
+}
+
+//////////////////////////////////////////////////
 // 주소 가져오기
 
 async function updateAddress(lat,lng){
@@ -283,12 +311,15 @@ data.address.neighbourhood ||
 '';
 
 address.innerHTML =
-`${city}<br>${suburb}`;
+`📍 현재위치 ${city}<br>${suburb}`;
+
+tempText.innerHTML =
+city;
 
 }catch(e){
 
 address.innerHTML =
-'주소 확인 실패';
+'📍 주소 확인 실패';
 
 }
 
@@ -308,12 +339,7 @@ const location =
 snapshot.val();
 
 if(!location){
-
-statusText.innerHTML =
-"위치 데이터 없음";
-
 return;
-
 }
 
 const lat =
@@ -323,11 +349,7 @@ const lng =
 location.longitude;
 
 //////////////////////////////////////////////////
-
-statusText.innerHTML =
-"실시간 연결됨";
-
-//////////////////////////////////////////////////
+// 지도 이동
 
 map.flyTo(
 [lat,lng],
@@ -351,6 +373,31 @@ marker.setLatLng(
 path.push([lat,lng]);
 
 polyline.setLatLngs(path);
+
+//////////////////////////////////////////////////
+// 주행거리 계산
+
+if(prevLatLng){
+
+const dist =
+calculateDistance(
+prevLatLng.lat,
+prevLatLng.lng,
+lat,
+lng
+);
+
+totalDistance += dist;
+
+distanceText.innerHTML =
+totalDistance.toFixed(2) + " km";
+
+}
+
+prevLatLng = {
+lat,
+lng
+};
 
 //////////////////////////////////////////////////
 
