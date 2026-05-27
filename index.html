@@ -54,21 +54,17 @@ margin-bottom:14px;
 font-size:22px;
 font-weight:800;
 line-height:1.1;
-margin-bottom:8px;
+margin-bottom:6px;
 }
 
 .info-row{
 display:flex;
-justify-content:space-between;
+justify-content:flex-start;
 align-items:center;
-margin-top:4px;
+margin-top:2px;
 font-size:16px;
 font-weight:700;
 line-height:1.1;
-}
-
-.label{
-color:#222;
 }
 
 .value{
@@ -109,12 +105,10 @@ display:none;
 </div>
 
 <div class="info-row">
-<div class="label">현재기온</div>
-<div class="value" id="temp">--°C</div>
+<div class="value" id="distance">
+0.00 km&nbsp;&nbsp;
+<span id="temp">--°C</span>
 </div>
-
-<div class="info-row">
-<div class="value" id="distance">0.00 km</div>
 </div>
 
 </div>
@@ -404,7 +398,7 @@ lng
 totalDistance += dist;
 
 distanceText.innerHTML =
-totalDistance.toFixed(2) + " km";
+`${totalDistance.toFixed(2)} km&nbsp;&nbsp;<span id="temp">${tempText.innerHTML}</span>`;
 
 }
 
