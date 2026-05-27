@@ -56,6 +56,29 @@ z-index:9999;
 
 }
 
+#time{
+
+font-size:15px;
+font-weight:700;
+
+line-height:1.6;
+
+color:#03c75a;
+
+margin-bottom:14px;
+
+}
+
+.line{
+
+height:1px;
+
+background:#ddd;
+
+margin-bottom:16px;
+
+}
+
 .title{
 font-size:24px;
 font-weight:800;
@@ -92,6 +115,12 @@ display:none;
 
 <div class="overlay">
 
+<div id="time">
+시간 불러오는중...
+</div>
+
+<div class="line"></div>
+
 <div class="title">
 📍 실시간 위치
 </div>
@@ -109,6 +138,41 @@ RTIRL 연결중...
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
+
+//////////////////////////////////////////////////
+// 현재 시간 표시
+
+const time =
+document.getElementById("time");
+
+function updateTime(){
+
+const now = new Date();
+
+const days = [
+'일요일',
+'월요일',
+'화요일',
+'수요일',
+'목요일',
+'금요일',
+'토요일'
+];
+
+time.innerHTML = `
+${now.getFullYear()}년
+${now.getMonth()+1}월
+${now.getDate()}일
+${days[now.getDay()]}
+<br>
+${now.toLocaleTimeString()}
+`;
+
+}
+
+setInterval(updateTime,1000);
+
+updateTime();
 
 //////////////////////////////////////////////////
 // 네 Pull Key
@@ -247,9 +311,12 @@ const location =
 snapshot.val();
 
 if(!location){
+
 statusText.innerHTML =
 "위치 데이터 없음";
+
 return;
+
 }
 
 const lat =
