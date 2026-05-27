@@ -297,23 +297,32 @@ const res = await fetch(
 const data =
 await res.json();
 
+//////////////////////////////////////////////////
+// 시 가져오기
+
 const city =
 data.address.city ||
 data.address.town ||
 data.address.county ||
+data.address.state ||
 '광명시';
 
-const suburb =
+//////////////////////////////////////////////////
+// 동 가져오기
+
+const dong =
+data.address.quarter ||
 data.address.suburb ||
 data.address.neighbourhood ||
 data.address.village ||
+data.address.hamlet ||
 '';
 
 //////////////////////////////////////////////////
 // 시 + 동 표시
 
 address.innerHTML =
-`${city} ${suburb}`;
+`${city} ${dong}`;
 
 //////////////////////////////////////////////////
 // 실제 온도 가져오기
