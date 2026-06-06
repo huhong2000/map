@@ -158,10 +158,9 @@ setInterval(updateTime,1000);
 updateTime();
 
 //////////////////////////////////////////////////
-// Pull Key
+// Pull Key (현재 실시간 연동 키가 맞는지 꼭 확인하세요)
 
-const pullKey =
-"8a7jul1r3kg4hd63";
+const pullKey = "8a7jul1r3kg4hd63";
 
 //////////////////////////////////////////////////
 // Firebase 연결
@@ -287,33 +286,23 @@ async function updateAddress(lat,lng){
 
 try{
 
-//////////////////////////////////////////////////
-// 주소 수신
-
 const res = await fetch(
 `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ko&lat=${lat}&lon=${lng}`
 );
 
-const data =
-await res.json();
+const data = await res.json();
+const addr = data.address || {};
 
-const addr =
-data.address || {};
-
-//////////////////////////////////////////////////
-// 기본 행정구역 추출
-
+// 행정구역 추출
 let siDo = addr.province || addr.state || '';
 let siGunGu = addr.city_district || addr.borough || addr.county || '';
 
-// OpenStreetMap 특성 데이터 예외 보정
 if (!siDo && addr.city && (addr.city.endsWith('도') || addr.city.includes('특별') || addr.city.includes('광역'))) {
     siDo = addr.city;
 } else if (addr.city && !siGunGu) {
     siGunGu = addr.city;
 }
 
-// 동 이름 추출 (가장 신뢰도 높은 첫 매칭 값 사용)
 const dongCandidates = [
     addr.suburb, 
     addr.quarter, 
@@ -323,73 +312,100 @@ const dongCandidates = [
 ];
 let dong = dongCandidates.find(item => item !== undefined && item !== '') || '';
 
-//////////////////////////////////////////////////
-// 주소 1차 조립 및 중복 제거
-
 let fullAddress = '';
 
 if (siDo) fullAddress += siDo + ' ';
-
-if (siGunGu && !fullAddress.includes(siGunGu)) {
-    fullAddress += siGunGu + ' ';
-}
-
-if (dong && !fullAddress.includes(dong) && !siGunGu.includes(dong)) {
-    fullAddress += dong;
-}
+if (siGunGu && !fullAddress.includes(siGunGu)) fullAddress += siGunGu + ' ';
+if (dong && !fullAddress.includes(dong) && !siGunGu.includes(dong)) fullAddress += dong;
 
 fullAddress = fullAddress.trim();
 
-//////////////////////////////////////////////////
-// ⚠️ 강력 보정 방어 코드
-// 데이터 공백으로 인해 '광명시'가 유실된 경우를 감지하여 강제 삽입
+// 광명시 유실 강제 보정 코드
 if (fullAddress.startsWith('경기도') && !fullAddress.includes('광명시')) {
     fullAddress = fullAddress.replace('경기도', '경기도 광명시');
 }
 
-// 주소가 완벽히 비어있을 때의 예외 처리
 if (!fullAddress) {
     fullAddress = data.display_name ? data.display_name.split(',')[0] : '위치 정보 없음';
 }
 
-//////////////////////////////////////////////////
-// 주소 표시
-
 address.innerHTML = fullAddress;
 
-//////////////////////////////////////////////////
-// 실제 온도 가져오기
-
+// 날씨 정보
 const weatherRes = await fetch(
 `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
 );
+const weatherData = await weatherRes.json();
+const temp = weatherData.current.temperature_2m;
 
-const weatherData =
-await weatherRes.json();
-
-const temp =
-weatherData.current.temperature_2m;
-
-tempText.innerHTML =
-`${temp}°C`;
+tempText.innerHTML = `${temp}°C`;
 
 }catch(e){
-
-address.innerHTML =
-'주소 확인 실패';
-
+console.error("주소/날씨 가져오기 실패:", e);
+address.innerHTML = '주소 확인 실패';
 }
 
 }
 
 //////////////////////////////////////////////////
-// RTIRL 실시간 수신
+// RTIRL 실시간 수신 (디버깅 코드 추가 및 경로 유연화)
+
+console.log("Firebase 수신 대기 시작... PullKey:", pullKey);
 
 firebase.database()
 .ref()
 .child("pullables")
 .child(pullKey)
-.child("location")
 .on("value", async(snapshot)=>{
 
-const location
+    const data = snapshot.val();
+    
+    // 데이터 수신 여부 확인을 위한 로그
+    console.log("Firebase 데이터 수신 테스트:", data);
+
+    if(!data) {
+        console.warn("해당 PullKey로 조회된 데이터가 전혀 없습니다. Key값을 확인하세요.");
+        return;
+    }
+
+    // 구조 유연화: data 바로 아래에 있거나 data.location 아래에 있는 구조 모두 방어
+    const location = data.location || data;
+
+    if(!location || !location.latitude || !location.longitude){
+        console.warn("데이터는 존재하나 내부에 latitude, longitude 좌표 정보가 없습니다.", location);
+        return;
+    }
+
+    const lat = location.latitude;
+    const lng = location.longitude;
+    
+    console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
+
+    //////////////////////////////////////////////////
+    // 지도 및 마커 이동
+    map.flyTo([lat,lng], 15, {animate:true, duration:1.5});
+    marker.setLatLng([lat,lng]);
+
+    // 경로 및 거리 계산
+    path.push([lat,lng]);
+    polyline.setLatLngs(path);
+
+    if(prevLatLng){
+        const dist = calculateDistance(prevLatLng.lat, prevLatLng.lng, lat, lng);
+        totalDistance += dist;
+        distanceText.innerHTML = `<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
+    }
+
+    prevLatLng = { lat, lng };
+
+    // 주소 갱신
+    await updateAddress(lat, lng);
+
+}, (error) => {
+    console.error("Firebase 연결 에러 발생:", error);
+});
+
+</script>
+
+</body>
+</html>
