@@ -291,7 +291,7 @@ try{
 // 주소
 
 const res = await fetch(
-`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ko&lat=${lat}&lon=${lng}`
 );
 
 const data =
@@ -301,33 +301,34 @@ const addr =
 data.address || {};
 
 //////////////////////////////////////////////////
-// 시 가져오기
+// 한국 주소 체계에 맞춘 추출 (시/도 + 구/군 + 동/읍/면)
 
-const city =
-addr.city ||
-addr.town ||
-addr.county ||
-addr.state ||
-'광명시';
+// 1. 시/도 (서울특별시, 경기도 등)
+const si = addr.province || addr.city || addr.state || '';
+
+// 2. 구/군 (강남구, 분당구, 양평군 등)
+const gu = addr.borough || addr.city_district || addr.county || '';
+
+// 3. 동/읍/면 (역삼동, 정자동, 양서면 등)
+const dong = addr.suburb || addr.quarter || addr.neighbourhood || addr.town || addr.village || '';
+
+// 중복 문자열 제거 및 깔끔한 결합 처리
+let fullAddress = '';
+if (si) fullAddress += si + ' ';
+
+// Nominatim 특성상 si와 gu가 같게 나오는 경우가 있어 중복 체크
+if (gu && gu !== si) fullAddress += gu + ' ';
+if (dong) fullAddress += dong;
+
+// 만약 주소를 전혀 못 가져왔을 때의 예외 처리
+if (!fullAddress.trim()) {
+    fullAddress = data.display_name ? data.display_name.split(',')[0] : '위치 정보 없음';
+}
 
 //////////////////////////////////////////////////
-// 동 가져오기
+// 주소 표시
 
-const dong =
-addr.city_district ||
-addr.borough ||
-addr.suburb ||
-addr.quarter ||
-addr.neighbourhood ||
-addr.village ||
-addr.hamlet ||
-'';
-
-//////////////////////////////////////////////////
-// 시 + 동 표시
-
-address.innerHTML =
-`${city} ${dong}`.trim();
+address.innerHTML = fullAddress.trim();
 
 //////////////////////////////////////////////////
 // 실제 온도 가져오기
