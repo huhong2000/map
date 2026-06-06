@@ -281,7 +281,7 @@ return R * c;
 }
 
 //////////////////////////////////////////////////
-// 주소 + 실제 온도 가져오기 (수정된 로직)
+// 주소 + 실제 온도 가져오기 (보정 버전)
 
 async function updateAddress(lat,lng){
 
@@ -301,22 +301,19 @@ const addr =
 data.address || {};
 
 //////////////////////////////////////////////////
-// 한국 행정구역 맞춤 정밀 파싱
+// 기본 행정구역 추출
 
-// 1. 시/도 (경기도, 서울특별시 등)
 let siDo = addr.province || addr.state || '';
-
-// 2. 시/군/구 (광명시, 강남구 등)
 let siGunGu = addr.city_district || addr.borough || addr.county || '';
 
-// 해외 API 특성 보정 예외 처리
+// OpenStreetMap 특성 데이터 예외 보정
 if (!siDo && addr.city && (addr.city.endsWith('도') || addr.city.includes('특별') || addr.city.includes('광역'))) {
     siDo = addr.city;
 } else if (addr.city && !siGunGu) {
     siGunGu = addr.city;
 }
 
-// 3. 읍/면/동/리 (철산동, 광명동 등 후보군 우선순위 추출)
+// 동 이름 추출 (가장 신뢰도 높은 첫 매칭 값 사용)
 const dongCandidates = [
     addr.suburb, 
     addr.quarter, 
@@ -327,39 +324,38 @@ const dongCandidates = [
 let dong = dongCandidates.find(item => item !== undefined && item !== '') || '';
 
 //////////////////////////////////////////////////
-// 자연스러운 주소 결합 및 중복 제거
+// 주소 1차 조립 및 중복 제거
 
 let fullAddress = '';
 
-// [시/도] 결합
 if (siDo) fullAddress += siDo + ' ';
 
-// [시/군/구] 결합 (시/도 명칭과 겹치지 않을 때만)
 if (siGunGu && !fullAddress.includes(siGunGu)) {
     fullAddress += siGunGu + ' ';
 }
 
-// [읍/면/동] 결합 (중복 방지 필터링)
-if (dong) {
-    // 철산2동과 광명동이 둘 다 잡히거나 중복 표기되는 것을 막기 위해 조건 검사
-    if (!fullAddress.includes(dong) && !siGunGu.includes(dong)) {
-        // 이미 주소창에 다른 '동' 이름이 들어가 있다면 추가하지 않음 (첫 번째 매칭된 동만 인정)
-        const hasDong = fullAddress.includes('동 ') || fullAddress.includes('읍 ') || fullAddress.includes('면 ');
-        if (!hasDong) {
-            fullAddress += dong;
-        }
-    }
+if (dong && !fullAddress.includes(dong) && !siGunGu.includes(dong)) {
+    fullAddress += dong;
 }
 
-// 혹시 모를 데이터 누락 시 기본값 방어 코드
-if (!fullAddress.trim()) {
+fullAddress = fullAddress.trim();
+
+//////////////////////////////////////////////////
+// ⚠️ 강력 보정 방어 코드
+// 데이터 공백으로 인해 '광명시'가 유실된 경우를 감지하여 강제 삽입
+if (fullAddress.startsWith('경기도') && !fullAddress.includes('광명시')) {
+    fullAddress = fullAddress.replace('경기도', '경기도 광명시');
+}
+
+// 주소가 완벽히 비어있을 때의 예외 처리
+if (!fullAddress) {
     fullAddress = data.display_name ? data.display_name.split(',')[0] : '위치 정보 없음';
 }
 
 //////////////////////////////////////////////////
 // 주소 표시
 
-address.innerHTML = fullAddress.trim();
+address.innerHTML = fullAddress;
 
 //////////////////////////////////////////////////
 // 실제 온도 가져오기
@@ -396,80 +392,4 @@ firebase.database()
 .child("location")
 .on("value", async(snapshot)=>{
 
-const location =
-snapshot.val();
-
-if(!location){
-return;
-}
-
-const lat =
-location.latitude;
-
-const lng =
-location.longitude;
-
-//////////////////////////////////////////////////
-// 지도 이동
-
-map.flyTo(
-[lat,lng],
-15,
-{
-animate:true,
-duration:1.5
-}
-);
-
-//////////////////////////////////////////////////
-// 현재 위치 마커 이동
-
-marker.setLatLng(
-[lat,lng]
-);
-
-//////////////////////////////////////////////////
-// 이동 경로
-
-path.push([lat,lng]);
-
-polyline.setLatLngs(path);
-
-//////////////////////////////////////////////////
-// 주행거리 계산
-
-if(prevLatLng){
-
-const dist =
-calculateDistance(
-prevLatLng.lat,
-prevLatLng.lng,
-lat,
-lng
-);
-
-totalDistance += dist;
-
-distanceText.innerHTML =
-`<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
-
-}
-
-prevLatLng = {
-lat,
-lng
-};
-
-//////////////////////////////////////////////////
-
-await updateAddress(
-lat,
-lng
-);
-
-});
-
-</script>
-
-</body>
-</html>
+const location
