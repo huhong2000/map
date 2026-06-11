@@ -327,10 +327,6 @@ if (dong && !fullAddress.includes(dong) && !siGunGu.includes(dong)) {
 
 fullAddress = fullAddress.trim();
 
-// 광명시 유실 강제 보정 코드
-if (fullAddress.startsWith('경기도') && !fullAddress.includes('광명시')) {
-    fullAddress = fullAddress.replace('경기도', '경기도 광명시');
-}
 
 // [추가 보정] '철산2동 광명동'처럼 동 이름이 다중으로 중복 표기되는 현상 방지
 // 최종 주소에서 '~동'으로 끝나는 단어가 2개 이상 발견되면 뒤쪽의 중복 패턴을 정리합니다.
