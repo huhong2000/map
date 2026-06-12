@@ -13,6 +13,9 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 
+<!-- 카카오 주소변환 API -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0a24afa0c61af81d240efd1991f00997&libraries=services"></script>
+
 <style>
 
 html,body{
@@ -282,88 +285,81 @@ return R * c;
 //////////////////////////////////////////////////
 // 주소 + 실제 온도 가져오기 (보정 버전)
 
-async function updateAddress(lat,lng){
+//////////////////////////////////////////////////
+// 주소 + 실제 온도 가져오기 (카카오 API)
+
+async function updateAddress(lat, lng){
 
 try{
 
-const res = await fetch(
-`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ko&lat=${lat}&lon=${lng}`
-);
+const geocoder =
+new kakao.maps.services.Geocoder();
 
-const data = await res.json();
-const addr = data.address || {};
+geocoder.coord2Address(
+lng,
+lat,
+async function(result, status){
 
-// 행정구역 추출
-let siDo = addr.province || addr.state || '';
-let siGunGu = addr.city_district || addr.borough || addr.county || '';
+if(status === kakao.maps.services.Status.OK){
 
-if (!siDo && addr.city && (addr.city.endsWith('도') || addr.city.includes('특별') || addr.city.includes('광역'))) {
-    siDo = addr.city;
-} else if (addr.city && !siGunGu) {
-    siGunGu = addr.city;
+const addr = result[0].address;
+
+const sido =
+addr.region_1depth_name || '';
+
+const sigungu =
+addr.region_2depth_name || '';
+
+const dong =
+addr.region_3depth_name || '';
+
+address.innerHTML =
+`${sido} ${sigungu} ${dong}`;
+
+}else{
+
+address.innerHTML =
+'주소 확인 실패';
+
 }
 
-// 동/읍/면 후보군 검사하여 가장 구체적인 첫 번째 값만 추출
-const dongCandidates = [
-    addr.suburb, 
-    addr.quarter, 
-    addr.neighbourhood, 
-    addr.town, 
-    addr.village
-];
+try{
 
-// 유효한 첫 번째 동 정보 선택
-let dong = dongCandidates.find(item => item !== undefined && item !== '') || '';
-
-let fullAddress = '';
-
-if (siDo) fullAddress += siDo + ' ';
-if (siGunGu && !fullAddress.includes(siGunGu)) fullAddress += siGunGu + ' ';
-
-// 만약 추출된 동 이름이 시군구 이름에 이미 포함되어 있지 않을 때만 결합
-if (dong && !fullAddress.includes(dong) && !siGunGu.includes(dong)) {
-    fullAddress += dong;
-}
-
-fullAddress = fullAddress.trim();
-
-
-// [추가 보정] '철산2동 광명동'처럼 동 이름이 다중으로 중복 표기되는 현상 방지
-// 최종 주소에서 '~동'으로 끝나는 단어가 2개 이상 발견되면 뒤쪽의 중복 패턴을 정리합니다.
-const tokens = fullAddress.split(' ');
-const filteredTokens = [];
-let baseDongFound = false;
-
-for (let token of tokens) {
-    if (token.endsWith('동') || token.endsWith('읍') || token.endsWith('면')) {
-        if (!baseDongFound) {
-            filteredTokens.push(token);
-            baseDongFound = true; // 첫 번째 동(예: 철산2동)만 살립니다.
-        }
-    } else {
-        filteredTokens.push(token);
-    }
-}
-fullAddress = filteredTokens.join(' ');
-
-if (!fullAddress) {
-    fullAddress = data.display_name ? data.display_name.split(',')[0] : '위치 정보 없음';
-}
-
-address.innerHTML = fullAddress;
-
-// 날씨 정보
 const weatherRes = await fetch(
 `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
 );
-const weatherData = await weatherRes.json();
-const temp = weatherData.current.temperature_2m;
 
-tempText.innerHTML = `${temp}°C`;
+const weatherData =
+await weatherRes.json();
+
+const temp =
+weatherData.current.temperature_2m;
+
+tempText.innerHTML =
+`${temp}°C`;
+
+}catch(err){
+
+console.error(
+"날씨 조회 실패",
+err
+);
+
+}
+
+}
+);
 
 }catch(e){
-console.error("주소/날씨 가져오기 실패:", e);
-address.innerHTML = '주소 확인 실패';
+
+console.error(
+"주소 조회 실패",
+e
+);
+
+address.innerHTML =
+'주소 확인 실패';
+
 }
 
 }
