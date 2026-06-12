@@ -13,7 +13,6 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
 
-<!-- 카카오 주소변환 API -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0a24afa0c61af81d240efd1991f00997&libraries=services"></script>
 
 <style>
@@ -128,40 +127,27 @@ display:none;
 //////////////////////////////////////////////////
 // 현재 시간 표시
 
-const time =
-document.getElementById("time");
+const time = document.getElementById("time");
 
 function updateTime(){
+    const now = new Date();
+    const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
-const now = new Date();
-
-const days = [
-'일요일',
-'월요일',
-'화요일',
-'수요일',
-'목요일',
-'금요일',
-'토요일'
-];
-
-time.innerHTML = `
-${now.getFullYear()}년
-${now.getMonth()+1}월
-${now.getDate()}일
-${days[now.getDay()]}
-<br>
-${now.toLocaleTimeString()}
-`;
-
+    time.innerHTML = `
+    ${now.getFullYear()}년
+    ${now.getMonth()+1}월
+    ${now.getDate()}일
+    ${days[now.getDay()]}
+    <br>
+    ${now.toLocaleTimeString()}
+    `;
 }
 
 setInterval(updateTime,1000);
-
 updateTime();
 
 //////////////////////////////////////////////////
-// Pull Key (현재 실시간 연동 키가 맞는지 꼭 확인하세요)
+// Pull Key
 
 const pullKey = "8a7jul1r3kg4hd63";
 
@@ -169,84 +155,44 @@ const pullKey = "8a7jul1r3kg4hd63";
 // Firebase 연결
 
 firebase.initializeApp({
-
-apiKey:
-"AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
-
-databaseURL:
-"https://rtirl-a1d7f-default-rtdb.firebaseio.com",
-
-projectId:
-"rtirl-a1d7f",
-
-appId:
-"1:684852107701:web:d77a8ed0ee5095279a61fc"
-
+    apiKey: "AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
+    databaseURL: "https://rtirl-a1d7f-default-rtdb.firebaseio.com",
+    projectId: "rtirl-a1d7f",
+    appId: "1:684852107701:web:d77a8ed0ee5095279a61fc"
 });
 
 //////////////////////////////////////////////////
 
-const address =
-document.getElementById("address");
-
-const tempText =
-document.getElementById("temp");
-
-const distanceText =
-document.getElementById("distance");
+const address = document.getElementById("address");
+const tempText = document.getElementById("temp");
+const distanceText = document.getElementById("distance");
 
 //////////////////////////////////////////////////
 // 지도 생성
 
-const map = L.map(
-'map',
-{
-zoomControl:false
-}
-).setView(
-[37.5665,126.9780],
-15
-);
+const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 15);
 
 //////////////////////////////////////////////////
 // 지도 타일
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-maxZoom:19
-}
-).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
 
 //////////////////////////////////////////////////
 // 현재 위치 마커
 
-const marker =
-L.circleMarker(
-[37.5665,126.9780],
-{
-radius:10,
-color:'#fff',
-weight:4,
-fillColor:'#2A7FFF',
-fillOpacity:1
-}
-).addTo(map);
+const marker = L.circleMarker([37.5665,126.9780], {
+    radius:10,
+    color:'#fff',
+    weight:4,
+    fillColor:'#2A7FFF',
+    fillOpacity:1
+}).addTo(map);
 
 //////////////////////////////////////////////////
 // 이동 경로
 
 const path = [];
-
-const polyline =
-L.polyline(
-path,
-{
-color:'#2A7FFF',
-weight:5,
-opacity:0.9
-}
-).addTo(map);
+const polyline = L.polyline(path, { color:'#2A7FFF', weight:5, opacity:0.9 }).addTo(map);
 
 //////////////////////////////////////////////////
 // 총 주행거리 계산
@@ -255,117 +201,60 @@ let totalDistance = 0;
 let prevLatLng = null;
 
 function calculateDistance(lat1,lng1,lat2,lng2){
-
-const R = 6371;
-
-const dLat =
-(lat2-lat1) * Math.PI/180;
-
-const dLng =
-(lng2-lng1) * Math.PI/180;
-
-const a =
-Math.sin(dLat/2) *
-Math.sin(dLat/2) +
-Math.cos(lat1*Math.PI/180) *
-Math.cos(lat2*Math.PI/180) *
-Math.sin(dLng/2) *
-Math.sin(dLng/2);
-
-const c =
-2 * Math.atan2(
-Math.sqrt(a),
-Math.sqrt(1-a)
-);
-
-return R * c;
-
+    const R = 6371;
+    const dLat = (lat2-lat1) * Math.PI/180;
+    const dLng = (lng2-lng1) * Math.PI/180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 
 //////////////////////////////////////////////////
-// 주소 + 실제 온도 가져오기 (보정 버전)
+// 주소(카카오 API) + 실제 온도 가져오기 (비동기 흐름 개선 버전)
 
-//////////////////////////////////////////////////
-// 주소 + 실제 온도 가져오기 (카카오 API)
+function getKakaoAddress(geocoder, lat, lng) {
+    return new Promise((resolve) => {
+        geocoder.coord2Address(lng, lat, function(result, status) {
+            if (status === kakao.maps.services.Status.OK && result[0]) {
+                const addr = result[0].address;
+                const sido = addr.region_1depth_name || '';
+                const sigungu = addr.region_2depth_name || '';
+                const dong = addr.region_3depth_name || '';
+                resolve(`${sido} ${sigungu} ${dong}`.trim());
+            } else {
+                resolve('주소 정보 없음');
+            }
+        });
+    });
+}
 
 async function updateAddress(lat, lng){
+    try {
+        const geocoder = new kakao.maps.services.Geocoder();
+        
+        // 1. 카카오 API로 주소 가져오기 동기화 처리
+        const fullAddress = await getKakaoAddress(geocoder, lat, lng);
+        address.innerHTML = fullAddress;
 
-try{
+        // 2. 날씨 정보 가져오기
+        const weatherRes = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
+        );
+        const weatherData = await weatherRes.json();
+        const temp = weatherData.current.temperature_2m;
+        
+        tempText.innerHTML = `${temp}°C`;
 
-const geocoder =
-new kakao.maps.services.Geocoder();
-
-geocoder.coord2Address(
-lng,
-lat,
-async function(result, status){
-
-if(status === kakao.maps.services.Status.OK){
-
-const addr = result[0].address;
-
-const sido =
-addr.region_1depth_name || '';
-
-const sigungu =
-addr.region_2depth_name || '';
-
-const dong =
-addr.region_3depth_name || '';
-
-address.innerHTML =
-`${sido} ${sigungu} ${dong}`;
-
-}else{
-
-address.innerHTML =
-'주소 확인 실패';
-
-}
-
-try{
-
-const weatherRes = await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
-);
-
-const weatherData =
-await weatherRes.json();
-
-const temp =
-weatherData.current.temperature_2m;
-
-tempText.innerHTML =
-`${temp}°C`;
-
-}catch(err){
-
-console.error(
-"날씨 조회 실패",
-err
-);
-
-}
-
-}
-);
-
-}catch(e){
-
-console.error(
-"주소 조회 실패",
-e
-);
-
-address.innerHTML =
-'주소 확인 실패';
-
-}
-
+    } catch(e) {
+        console.error("데이터 동기화 실패:", e);
+        address.innerHTML = '주소 확인 실패';
+    }
 }
 
 //////////////////////////////////////////////////
-// RTIRL 실시간 수신 (디버깅 코드 추가 및 경로 유연화)
+// RTIRL 실시간 수신
 
 console.log("Firebase 수신 대기 시작... PullKey:", pullKey);
 
@@ -376,8 +265,6 @@ firebase.database()
 .on("value", async(snapshot)=>{
 
     const data = snapshot.val();
-    
-    // 데이터 수신 여부 확인을 위한 로그
     console.log("Firebase 데이터 수신 테스트:", data);
 
     if(!data) {
@@ -385,7 +272,6 @@ firebase.database()
         return;
     }
 
-    // 구조 유연화: data 바로 아래에 있거나 data.location 아래에 있는 구조 모두 방어
     const location = data.location || data;
 
     if(!location || !location.latitude || !location.longitude){
@@ -398,7 +284,6 @@ firebase.database()
     
     console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
 
-    //////////////////////////////////////////////////
     // 지도 및 마커 이동
     map.flyTo([lat,lng], 15, {animate:true, duration:1.5});
     marker.setLatLng([lat,lng]);
@@ -410,13 +295,14 @@ firebase.database()
     if(prevLatLng){
         const dist = calculateDistance(prevLatLng.lat, prevLatLng.lng, lat, lng);
         totalDistance += dist;
-        distanceText.innerHTML = `<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
     }
+    
+    // 주소 및 날씨 처리 완료를 기다린 후 하단 UI 일괄 갱신
+    await updateAddress(lat, lng);
+    
+    distanceText.innerHTML = `<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
 
     prevLatLng = { lat, lng };
-
-    // 주소 갱신
-    await updateAddress(lat, lng);
 
 }, (error) => {
     console.error("Firebase 연결 에러 발생:", error);
