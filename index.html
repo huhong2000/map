@@ -170,7 +170,7 @@ const distanceText = document.getElementById("distance");
 //////////////////////////////////////////////////
 // 지도 생성
 
-const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 12);
+const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 10);
 
 //////////////////////////////////////////////////
 // 지도 타일
@@ -285,7 +285,7 @@ firebase.database()
     console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
 
     // 지도 및 마커 이동
-    map.flyTo([lat,lng], 12, {animate:true, duration:1.5});
+    map.flyTo([lat,lng], 10, {animate:true, duration:1.5});
     marker.setLatLng([lat,lng]);
 
     // 경로 및 거리 계산
