@@ -170,27 +170,9 @@ const distanceText = document.getElementById("distance");
 //////////////////////////////////////////////////
 // 지도 생성
 
-const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 10);
+const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 14);
 
-//////////////////////////////////////////////////
-// 자동 줌 변경 (1분마다 10 ↔ 15)
 
-let currentZoom = 10;
-
-setInterval(() => {
-
-    currentZoom = (currentZoom === 10) ? 15 : 10;
-
-    map.flyTo(
-        map.getCenter(),
-        currentZoom,
-        {
-            animate:true,
-            duration:2
-        }
-    );
-
-}, 60000); // 1분
 
 //////////////////////////////////////////////////
 // 지도 타일
@@ -201,9 +183,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }
 // 현재 위치 마커
 
 const marker = L.circleMarker([37.5665,126.9780], {
-    radius:10,
+    radius:6,
     color:'#fff',
-    weight:4,
+    weight:3,
     fillColor:'#2A7FFF',
     fillOpacity:1
 }).addTo(map);
@@ -213,6 +195,77 @@ const marker = L.circleMarker([37.5665,126.9780], {
 
 const path = [];
 const polyline = L.polyline(path, { color:'#2A7FFF', weight:5, opacity:0.9 }).addTo(map);
+
+//////////////////////////////////////////////////
+// 자동 화면 전환
+//
+// 1분마다 반복
+//
+// 0 = 현재 위치 확대 (줌14)
+// 1 = 이동 경로 전체 보기
+// 2 = 현재 위치 축소 (줌9)
+
+let viewMode = 0;
+
+setInterval(() => {
+
+    viewMode++;
+
+    if(viewMode > 2){
+        viewMode = 0;
+    }
+
+    //////////////////////////////////////////////////
+    // 현재 위치 확대 보기
+
+    if(viewMode === 0){
+
+        map.flyTo(
+            marker.getLatLng(),
+            14,
+            {
+                animate:true,
+                duration:2
+            }
+        );
+
+    }
+
+    //////////////////////////////////////////////////
+    // 이동 경로 전체 보기
+
+    else if(viewMode === 1){
+
+        if(path.length > 1){
+
+            map.fitBounds(
+                polyline.getBounds(),
+                {
+                    padding:[30,30]
+                }
+            );
+
+        }
+
+    }
+
+    //////////////////////////////////////////////////
+    // 현재 위치 축소 보기
+
+    else if(viewMode === 2){
+
+        map.flyTo(
+            marker.getLatLng(),
+            9,
+            {
+                animate:true,
+                duration:2
+            }
+        );
+
+    }
+
+}, 60000); // 1분마다 전환
 
 //////////////////////////////////////////////////
 // 총 주행거리 계산
@@ -304,25 +357,40 @@ firebase.database()
     
     console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
 
-    // 지도 및 마커 이동
-    map.flyTo(
-    [lat,lng],
-    currentZoom,
-    {
-        animate:true,
-        duration:1.5
-    }
-);
-    marker.setLatLng([lat,lng]);
+// 지도 및 마커 이동
 
-    // 경로 및 거리 계산
-    path.push([lat,lng]);
-    polyline.setLatLngs(path);
+marker.setLatLng([lat,lng]);
 
-    if(prevLatLng){
-        const dist = calculateDistance(prevLatLng.lat, prevLatLng.lng, lat, lng);
-        totalDistance += dist;
-    }
+// 전체 경로 보기 모드가 아닐 때는 현재 위치 따라가기
+if(viewMode !== 1){
+
+    map.panTo([lat,lng], {
+        animate:true
+    });
+
+}
+
+// 경로 및 거리 계산
+
+path.push([lat,lng]);
+
+// 최근 8000개 좌표만 유지
+if(path.length > 8000){
+    path.shift();
+}
+
+polyline.setLatLngs(path);
+
+// 총 주행거리 계산
+if(prevLatLng){
+    const dist = calculateDistance(
+        prevLatLng.lat,
+        prevLatLng.lng,
+        lat,
+        lng
+    );
+    totalDistance += dist;
+}
     
     // 주소 및 날씨 처리 완료를 기다린 후 하단 UI 일괄 갱신
     await updateAddress(lat, lng);
