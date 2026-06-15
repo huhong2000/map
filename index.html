@@ -173,6 +173,26 @@ const distanceText = document.getElementById("distance");
 const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 10);
 
 //////////////////////////////////////////////////
+// 자동 줌 변경 (1분마다 10 ↔ 15)
+
+let currentZoom = 10;
+
+setInterval(() => {
+
+    currentZoom = (currentZoom === 10) ? 15 : 10;
+
+    map.flyTo(
+        map.getCenter(),
+        currentZoom,
+        {
+            animate:true,
+            duration:2
+        }
+    );
+
+}, 60000); // 1분
+
+//////////////////////////////////////////////////
 // 지도 타일
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
@@ -285,7 +305,14 @@ firebase.database()
     console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
 
     // 지도 및 마커 이동
-    map.flyTo([lat,lng], 10, {animate:true, duration:1.5});
+    map.flyTo(
+    [lat,lng],
+    currentZoom,
+    {
+        animate:true,
+        duration:1.5
+    }
+);
     marker.setLatLng([lat,lng]);
 
     // 경로 및 거리 계산
