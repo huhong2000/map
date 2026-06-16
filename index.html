@@ -170,11 +170,7 @@ const distanceText = document.getElementById("distance");
 //////////////////////////////////////////////////
 // 지도 생성
 
-const map = L.map('map', {
-    zoomControl:false,
-    zoomAnimation:true,
-    markerZoomAnimation:false
-}).setView([37.5665,126.9780], 14);
+const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 14);
 
 
 
@@ -186,21 +182,12 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }
 //////////////////////////////////////////////////
 // 현재 위치 마커
 
-const marker = L.marker([37.5665,126.9780], {
-    icon: L.divIcon({
-        className: '',
-        html: `
-        <div style="
-            width:12px;
-            height:12px;
-            background:#2A7FFF;
-            border:3px solid #fff;
-            border-radius:50%;
-        "></div>
-        `,
-        iconSize:[18,18],
-        iconAnchor:[9,9]
-    })
+const marker = L.circleMarker([37.5665,126.9780], {
+    radius:6,
+    color:'#fff',
+    weight:3,
+    fillColor:'#2A7FFF',
+    fillOpacity:1
 }).addTo(map);
 
 //////////////////////////////////////////////////
@@ -233,14 +220,14 @@ setInterval(() => {
 
     if(viewMode === 0){
 
-map.flyTo(
-    marker.getLatLng(),
-    14,
-    {
-        animate:true,
-        duration:2
-    }
-);
+        map.flyTo(
+            marker.getLatLng(),
+            14,
+            {
+                animate:true,
+                duration:2
+            }
+        );
 
     }
 
@@ -267,14 +254,14 @@ map.flyTo(
 
     else if(viewMode === 2){
 
-map.flyTo(
-    marker.getLatLng(),
-    9,
-    {
-        animate:true,
-        duration:2
-    }
-);
+        map.flyTo(
+            marker.getLatLng(),
+            9,
+            {
+                animate:true,
+                duration:2
+            }
+        );
 
     }
 
@@ -420,3 +407,4 @@ if(prevLatLng){
 
 </body>
 </html>
+\
