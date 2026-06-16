@@ -87,6 +87,49 @@ display:none;
 display:none;
 }
 
+.pulse-marker{
+    position:relative;
+    width:24px;
+    height:24px;
+}
+
+.pulse{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:24px;
+    height:24px;
+    background:#2A7FFF;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    opacity:0.5;
+    animation:pulse 1.5s infinite;
+}
+
+.dot{
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:16px;
+    height:16px;
+    background:#2A7FFF;
+    border:3px solid #fff;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 6px rgba(0,0,0,0.4);
+}
+
+@keyframes pulse{
+    0%{
+        transform:translate(-50%,-50%) scale(1);
+        opacity:0.5;
+    }
+    100%{
+        transform:translate(-50%,-50%) scale(2.5);
+        opacity:0;
+    }
+}
+    
 </style>
 </head>
 
@@ -186,17 +229,13 @@ const marker = L.marker([37.5665,126.9780], {
     icon: L.divIcon({
         className: '',
         html: `
-        <div style="
-            width:12px;
-            height:12px;
-            background:#2A7FFF;
-            border:3px solid #fff;
-            border-radius:50%;
-            box-sizing:border-box;
-        "></div>
+        <div class="pulse-marker">
+            <div class="pulse"></div>
+            <div class="dot"></div>
+        </div>
         `,
-        iconSize:[18,18],
-        iconAnchor:[9,9]
+        iconSize:[24,24],
+        iconAnchor:[12,12]
     })
 }).addTo(map);
 
@@ -204,7 +243,11 @@ const marker = L.marker([37.5665,126.9780], {
 // 이동 경로
 
 const path = [];
-const polyline = L.polyline(path, { color:'#2A7FFF', weight:5, opacity:0.9 }).addTo(map);
+const polyline = L.polyline(path, {
+    color:'#6FA8FF',
+    weight:5,
+    opacity:0.7
+}).addTo(map);
 
 //////////////////////////////////////////////////
 // 자동 화면 전환
