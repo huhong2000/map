@@ -220,14 +220,13 @@ setInterval(() => {
 
     if(viewMode === 0){
 
-        map.flyTo(
-            marker.getLatLng(),
-            14,
-            {
-                animate:true,
-                duration:2
-            }
-        );
+map.flyTo(
+    marker.getLatLng(),
+    14,
+    {
+        animate:false
+    }
+);
 
     }
 
@@ -254,14 +253,13 @@ setInterval(() => {
 
     else if(viewMode === 2){
 
-        map.flyTo(
-            marker.getLatLng(),
-            9,
-            {
-                animate:true,
-                duration:2
-            }
-        );
+map.flyTo(
+    marker.getLatLng(),
+    9,
+    {
+        animate:false
+    }
+);
 
     }
 
