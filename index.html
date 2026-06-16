@@ -97,13 +97,13 @@ display:none;
     position:absolute;
     left:50%;
     top:50%;
-    width:24px;
-    height:24px;
+    width:32px;
+    height:32px;
     background:#2A7FFF;
     border-radius:50%;
     transform:translate(-50%,-50%);
-    opacity:0.5;
-    animation:pulse 1.5s infinite;
+    opacity:0.4;
+    animation:pulse 1.8s infinite;
 }
 
 .dot{
@@ -121,11 +121,11 @@ display:none;
 
 @keyframes pulse{
     0%{
-        transform:translate(-50%,-50%) scale(1);
+        transform:translate(-50%,-50%) scale(0.8);
         opacity:0.5;
     }
     100%{
-        transform:translate(-50%,-50%) scale(2.5);
+        transform:translate(-50%,-50%) scale(1.8);
         opacity:0;
     }
 }
