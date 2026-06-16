@@ -170,7 +170,10 @@ const distanceText = document.getElementById("distance");
 //////////////////////////////////////////////////
 // 지도 생성
 
-const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 14);
+const map = L.map('map', {
+    zoomControl:false,
+    zoomAnimation:false
+}).setView([37.5665,126.9780], 14);
 
 
 
