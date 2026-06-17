@@ -89,8 +89,8 @@ display:none;
 
 .pulse-marker{
     position:relative;
-    width:24px;
-    height:24px;
+    width:20px;
+    height:20px;
 }
 
 .pulse{
@@ -234,10 +234,13 @@ const marker = L.marker([37.5665,126.9780], {
             <div class="dot"></div>
         </div>
         `,
-iconSize:[20,20],
-iconAnchor:[10,10]
+        iconSize:[20,20],
+        iconAnchor:[10,10]
     })
 }).addTo(map);
+
+// 항상 경로선보다 위에 표시
+marker.setZIndexOffset(1000);
 
 //////////////////////////////////////////////////
 // 이동 경로
