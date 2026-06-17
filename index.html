@@ -294,12 +294,13 @@ setInterval(() => {
 
         if(path.length > 1){
 
-            map.fitBounds(
-                polyline.getBounds(),
-                {
-                    padding:[30,30]
-                }
-            );
+map.fitBounds(
+    polyline.getBounds(),
+    {
+        padding:[30,30],
+        maxZoom:14
+    }
+);
 
         }
 
