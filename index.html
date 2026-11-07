@@ -1,90 +1,87 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>RTIRL 실시간 위치</title>
 
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet/dist/leaflet.css"
-/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase.js"></script>
-
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0a24afa0c61af81d240efd1991f00997&libraries=services"></script>
 
 <style>
-
 html,body{
-margin:0;
-padding:0;
-background:#f5f5f5;
-font-family:sans-serif;
+    margin:0;
+    padding:0;
+    background:transparent;
+    font-family:sans-serif;
 }
 
 .wrap{
-width:340px;
-margin:20px auto;
-background:#fff;
-border-radius:24px;
-overflow:hidden;
-box-shadow:
-0 6px 30px rgba(0,0,0,0.15);
+    width:340px;
+    margin:20px auto;
+    background:#fff;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 6px 30px rgba(0,0,0,0.15);
+    opacity:1;
+    transition:opacity 0.15s;
 }
 
-.info{
-padding:18px;
+/* 백그라운드에서는 완전 투명 */
+body.background-mode .wrap{
+    opacity:0;
+    pointer-events:none;
 }
+
+.info{padding:18px;}
 
 #time{
-font-size:18px;
-font-weight:700;
-line-height:1.1;
-color:#03c75a;
-margin-bottom:10px;
+    font-size:18px;
+    font-weight:700;
+    line-height:1.1;
+    color:#03c75a;
+    margin-bottom:10px;
 }
 
 .line{
-height:1px;
-background:#e5e5e5;
-margin-bottom:14px;
+    height:1px;
+    background:#e5e5e5;
+    margin-bottom:14px;
 }
 
 .address{
-font-size:18px;
-font-weight:700;
-line-height:1.1;
-margin-bottom:6px;
+    font-size:18px;
+    font-weight:700;
+    line-height:1.1;
+    margin-bottom:6px;
 }
 
 .info-row{
-display:flex;
-justify-content:flex-start;
-align-items:center;
-margin-top:2px;
-font-size:16px;
-font-weight:700;
-line-height:1.1;
+    display:flex;
+    justify-content:flex-start;
+    align-items:center;
+    margin-top:2px;
+    font-size:16px;
+    font-weight:700;
+    line-height:1.1;
 }
 
 .value{
-color:#111;
-font-weight:800;
+    color:#111;
+    font-weight:800;
 }
 
 #map{
-width:100%;
-height:224px;
+    width:100%;
+    height:224px;
 }
 
-.leaflet-control-attribution{
-display:none;
-}
-
+.leaflet-control-attribution,
 .leaflet-control-zoom{
-display:none;
+    display:none;
 }
 
 .pulse-marker{
@@ -129,73 +126,60 @@ display:none;
         opacity:0;
     }
 }
-    
 </style>
 </head>
 
 <body>
 
 <div class="wrap">
-
-<div class="info">
-
-<div id="time">
-시간 불러오는중...
-</div>
-
-<div class="line"></div>
-
-<div class="address" id="address">
-위치 확인중...
-</div>
-
-<div class="info-row">
-<div class="value" id="distance">
-<span id="temp">--°C</span>
-&nbsp;&nbsp;
-0.00 km
-</div>
-</div>
-
-</div>
-
-<div id="map"></div>
-
+    <div class="info">
+        <div id="time">시간 불러오는중...</div>
+        <div class="line"></div>
+        <div class="address" id="address">위치 확인중...</div>
+        <div class="info-row">
+            <div class="value" id="distance">
+                <span id="temp">--°C</span>
+                &nbsp;&nbsp;0.00 km
+            </div>
+        </div>
+    </div>
+    <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
 
-//////////////////////////////////////////////////
-// 현재 시간 표시
+// ========================================
+// 1. 시간 표시
 
 const time = document.getElementById("time");
 
 function updateTime(){
     const now = new Date();
-    const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    const days = [
+        '일요일','월요일','화요일',
+        '수요일','목요일','금요일','토요일'
+    ];
 
     time.innerHTML = `
-    ${now.getFullYear()}년
-    ${now.getMonth()+1}월
-    ${now.getDate()}일
-    ${days[now.getDay()]}
-    <br>
-    ${now.toLocaleTimeString()}
+        ${now.getFullYear()}년
+        ${now.getMonth()+1}월
+        ${now.getDate()}일
+        ${days[now.getDay()]}
+        <br>
+        ${now.toLocaleTimeString()}
     `;
 }
 
-setInterval(updateTime,1000);
 updateTime();
+setInterval(updateTime,1000);
 
-//////////////////////////////////////////////////
-// Pull Key
+
+// ========================================
+// 2. Firebase 설정
 
 const pullKey = "8a7jul1r3kg4hd63";
-
-//////////////////////////////////////////////////
-// Firebase 연결
 
 firebase.initializeApp({
     apiKey: "AIzaSyC4L8ICZbJDufxe8bimRdB5cAulPCaYVQQ",
@@ -204,263 +188,417 @@ firebase.initializeApp({
     appId: "1:684852107701:web:d77a8ed0ee5095279a61fc"
 });
 
-//////////////////////////////////////////////////
+const firebaseRef = firebase.database()
+    .ref()
+    .child("pullables")
+    .child(pullKey);
+
+
+// ========================================
+// 3. 화면 요소
 
 const address = document.getElementById("address");
 const tempText = document.getElementById("temp");
 const distanceText = document.getElementById("distance");
 
-//////////////////////////////////////////////////
-// 지도 생성
 
-const map = L.map('map', { zoomControl:false }).setView([37.5665,126.9780], 14);
+// ========================================
+// 4. 지도 생성
+
+const map = L.map('map', {
+    zoomControl:false
+}).setView([37.5665,126.9780],14);
+
+L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19}
+).addTo(map);
 
 
+// ========================================
+// 5. 현재 위치 마커
 
-//////////////////////////////////////////////////
-// 지도 타일
+const marker = L.marker(
+    [37.5665,126.9780],
+    {
+        icon:L.divIcon({
+            className:'',
+            html:`
+                <div class="pulse-marker">
+                    <div class="pulse"></div>
+                    <div class="dot"></div>
+                </div>
+            `,
+            iconSize:[20,20],
+            iconAnchor:[10,10]
+        })
+    }
+).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
-
-//////////////////////////////////////////////////
-// 현재 위치 마커
-
-const marker = L.marker([37.5665,126.9780], {
-    icon: L.divIcon({
-        className: '',
-        html: `
-        <div class="pulse-marker">
-            <div class="pulse"></div>
-            <div class="dot"></div>
-        </div>
-        `,
-        iconSize:[20,20],
-        iconAnchor:[10,10]
-    })
-}).addTo(map);
-
-// 항상 경로선보다 위에 표시
 marker.setZIndexOffset(1000);
 
-//////////////////////////////////////////////////
-// 이동 경로
 
-const path = [];
-const polyline = L.polyline(path, {
-    color:'#0066FF',
-    weight:5,
-    opacity:0.7
-}).addTo(map);
+// ========================================
+// 6. 이동 경로 점 표시
+// 선은 사용하지 않음
 
-//////////////////////////////////////////////////
-// 자동 화면 전환
-//
-// 1분마다 반복
-//
-// 0 = 현재 위치 확대 (줌14)
-// 1 = 이동 경로 전체 보기
-// 2 = 현재 위치 축소 (줌9)
+const SAMPLE_INTERVAL = 60 * 1000;
+
+const dotMarkers = [];
+const dotLatLngs = [];
+
+let lastDotAt = 0;
+let lastDot = null;
+let forceNextDot = true;
+
+
+// ========================================
+// 7. 자동 지도 화면 전환
 
 let viewMode = 0;
 
 setInterval(() => {
 
+    if(document.hidden) return;
+
     viewMode++;
 
-    if(viewMode > 2){
-        viewMode = 0;
-    }
-
-    //////////////////////////////////////////////////
-    // 현재 위치 확대 보기
+    if(viewMode > 2) viewMode = 0;
 
     if(viewMode === 0){
 
         map.flyTo(
             marker.getLatLng(),
             14,
-            {
-                animate:true,
-                duration:2
-            }
+            {animate:true,duration:2}
         );
 
     }
-
-    //////////////////////////////////////////////////
-    // 이동 경로 전체 보기
-
     else if(viewMode === 1){
 
-        if(path.length > 1){
+        if(dotLatLngs.length > 1){
 
-map.fitBounds(
-    polyline.getBounds(),
-    {
-        padding:[30,30],
-        maxZoom:14
-    }
-);
-
+            map.fitBounds(
+                L.latLngBounds(dotLatLngs),
+                {
+                    padding:[30,30],
+                    maxZoom:14
+                }
+            );
         }
 
     }
-
-    //////////////////////////////////////////////////
-    // 현재 위치 축소 보기
-
     else if(viewMode === 2){
 
         map.flyTo(
             marker.getLatLng(),
             9,
-            {
-                animate:true,
-                duration:2
-            }
+            {animate:true,duration:2}
         );
 
     }
 
-}, 60000); // 1분마다 전환
+},60000);
 
-//////////////////////////////////////////////////
-// 총 주행거리 계산
+
+// ========================================
+// 8. 거리 계산
 
 let totalDistance = 0;
 let prevLatLng = null;
 
 function calculateDistance(lat1,lng1,lat2,lng2){
+
     const R = 6371;
-    const dLat = (lat2-lat1) * Math.PI/180;
-    const dLng = (lng2-lng1) * Math.PI/180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLng = (lng2-lng1)*Math.PI/180;
+
+    const a =
+        Math.sin(dLat/2)**2 +
+        Math.cos(lat1*Math.PI/180) *
+        Math.cos(lat2*Math.PI/180) *
+        Math.sin(dLng/2)**2;
+
+    const c = 2*Math.atan2(
+        Math.sqrt(a),
+        Math.sqrt(1-a)
+    );
+
+    return R*c;
 }
 
-//////////////////////////////////////////////////
-// 주소(카카오 API) + 실제 온도 가져오기 (비동기 흐름 개선 버전)
 
-function getKakaoAddress(geocoder, lat, lng) {
-    return new Promise((resolve) => {
-        geocoder.coord2Address(lng, lat, function(result, status) {
-            if (status === kakao.maps.services.Status.OK && result[0]) {
-                const addr = result[0].address;
-                const sido = addr.region_1depth_name || '';
-                const sigungu = addr.region_2depth_name || '';
-                const dong = addr.region_3depth_name || '';
-                resolve(`${sido} ${sigungu} ${dong}`.trim());
-            } else {
-                resolve('주소 정보 없음');
+// ========================================
+// 9. 위치 점 추가
+
+function addLocationDot(lat,lng){
+
+    const now = Date.now();
+
+    // 같은 위치의 중복 점 방지
+    if(
+        lastDot &&
+        now-lastDotAt < 10000 &&
+        calculateDistance(
+            lastDot.lat,lastDot.lng,lat,lng
+        ) < 0.005
+    ){
+        return;
+    }
+
+    const point = L.circleMarker(
+        [lat,lng],
+        {
+            radius:4,
+            color:'#ffffff',
+            weight:1.5,
+            fillColor:'#0066FF',
+            fillOpacity:1
+        }
+    ).addTo(map);
+
+    dotMarkers.push(point);
+    dotLatLngs.push([lat,lng]);
+
+    lastDot = {lat,lng};
+    lastDotAt = now;
+
+    // 최근 8000개 점 유지
+    if(dotMarkers.length > 8000){
+
+        const old = dotMarkers.shift();
+
+        map.removeLayer(old);
+        dotLatLngs.shift();
+    }
+
+}
+
+
+// ========================================
+// 10. 카카오 주소 및 날씨
+
+function getKakaoAddress(geocoder,lat,lng){
+
+    return new Promise(resolve=>{
+
+        geocoder.coord2Address(
+            lng,lat,
+            function(result,status){
+
+                if(
+                    status === kakao.maps.services.Status.OK &&
+                    result[0]
+                ){
+
+                    const addr = result[0].address;
+
+                    resolve(
+                        `${addr.region_1depth_name || ''} `+
+                        `${addr.region_2depth_name || ''} `+
+                        `${addr.region_3depth_name || ''}`
+                    .trim());
+
+                }else{
+
+                    resolve('주소 정보 없음');
+
+                }
             }
-        });
+        );
     });
 }
 
-async function updateAddress(lat, lng){
-    try {
-        const geocoder = new kakao.maps.services.Geocoder();
-        
-        // 1. 카카오 API로 주소 가져오기 동기화 처리
-        const fullAddress = await getKakaoAddress(geocoder, lat, lng);
+async function updateAddress(lat,lng){
+
+    try{
+
+        const geocoder =
+            new kakao.maps.services.Geocoder();
+
+        const fullAddress =
+            await getKakaoAddress(geocoder,lat,lng);
+
         address.innerHTML = fullAddress;
 
-        // 2. 날씨 정보 가져오기
         const weatherRes = await fetch(
             `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m`
         );
+
         const weatherData = await weatherRes.json();
+
         const temp = weatherData.current.temperature_2m;
-        
+
         tempText.innerHTML = `${temp}°C`;
 
-    } catch(e) {
-        console.error("데이터 동기화 실패:", e);
+    }catch(e){
+
+        console.error("주소/날씨 오류:",e);
+
         address.innerHTML = '주소 확인 실패';
+
     }
 }
 
-//////////////////////////////////////////////////
-// RTIRL 실시간 수신
 
-console.log("Firebase 수신 대기 시작... PullKey:", pullKey);
+// ========================================
+// 11. 위치 데이터 처리
 
-firebase.database()
-.ref()
-.child("pullables")
-.child(pullKey)
-.on("value", async(snapshot)=>{
+function processLocation(location,forceDot=false){
 
-    const data = snapshot.val();
-    console.log("Firebase 데이터 수신 테스트:", data);
+    if(document.hidden){
 
-    if(!data) {
-        console.warn("해당 PullKey로 조회된 데이터가 전혀 없습니다. Key값을 확인하세요.");
+        prevLatLng = null;
         return;
     }
 
-    const location = data.location || data;
+    if(
+        !location ||
+        location.latitude == null ||
+        location.longitude == null
+    ) return;
 
-    if(!location || !location.latitude || !location.longitude){
-        console.warn("데이터는 존재하나 내부에 latitude, longitude 좌표 정보가 없습니다.", location);
-        return;
+    const lat = Number(location.latitude);
+    const lng = Number(location.longitude);
+
+    if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    // 현재 위치 마커 이동
+    marker.setLatLng([lat,lng]);
+
+    // 현재 위치 따라가기
+    if(viewMode !== 1){
+
+        map.panTo(
+            [lat,lng],
+            {animate:true}
+        );
+
     }
 
-    const lat = location.latitude;
-    const lng = location.longitude;
-    
-    console.log(`좌표 수신 성공 -> Lat: ${lat}, Lng: ${lng}`);
+    // 1분 간격으로 점 추가
+    const now = Date.now();
 
-// 지도 및 마커 이동
+    if(
+        forceDot ||
+        forceNextDot ||
+        now-lastDotAt >= SAMPLE_INTERVAL
+    ){
 
-marker.setLatLng([lat,lng]);
+        addLocationDot(lat,lng);
 
-// 전체 경로 보기 모드가 아닐 때는 현재 위치 따라가기
-if(viewMode !== 1){
+        forceNextDot = false;
+    }
 
-    map.panTo([lat,lng], {
-        animate:true
-    });
+    // 주행거리 계산
+    // 백그라운드 복귀 후 첫 위치는 계산하지 않음
+    if(prevLatLng){
 
+        const dist = calculateDistance(
+            prevLatLng.lat,
+            prevLatLng.lng,
+            lat,
+            lng
+        );
+
+        totalDistance += dist;
+    }
+
+    prevLatLng = {lat,lng};
+
+    distanceText.innerHTML =
+        `<span id="temp">${tempText.innerHTML}</span>`+
+        `&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
+
+    updateAddress(lat,lng);
 }
 
-// 경로 및 거리 계산
 
-path.push([lat,lng]);
+// ========================================
+// 12. PRISM 백그라운드 감지
 
-// 최근 8000개 좌표만 유지
-if(path.length > 8000){
-    path.shift();
-}
+document.addEventListener(
+    "visibilitychange",
+    function(){
 
-polyline.setLatLngs(path);
+        if(document.hidden){
 
-// 총 주행거리 계산
-if(prevLatLng){
-    const dist = calculateDistance(
-        prevLatLng.lat,
-        prevLatLng.lng,
-        lat,
-        lng
-    );
-    totalDistance += dist;
-}
-    
-    // 주소 및 날씨 처리 완료를 기다린 후 하단 UI 일괄 갱신
-    await updateAddress(lat, lng);
-    
-    distanceText.innerHTML = `<span id="temp">${tempText.innerHTML}</span>&nbsp;&nbsp;${totalDistance.toFixed(2)} km`;
+            // 화면 전체 투명
+            document.body.classList.add("background-mode");
 
-    prevLatLng = { lat, lng };
+            // 다음 복귀 위치는 새 구간으로 시작
+            prevLatLng = null;
+            forceNextDot = true;
 
-}, (error) => {
-    console.error("Firebase 연결 에러 발생:", error);
-});
+            console.log("백그라운드: 화면 숨김");
+
+        }else{
+
+            // 화면 다시 표시
+            document.body.classList.remove("background-mode");
+
+            // 지도 크기 재계산
+            map.invalidateSize();
+
+            // 이전 위치와 연결하지 않음
+            prevLatLng = null;
+            forceNextDot = true;
+
+            // Firebase 최신 좌표 다시 요청
+            firebaseRef.once("value")
+                .then(snapshot=>{
+
+                    const data = snapshot.val();
+
+                    if(!data) return;
+
+                    const location = data.location || data;
+
+                    processLocation(location,true);
+
+                })
+                .catch(error=>{
+
+                    console.error("복귀 위치 조회 실패:",error);
+
+                });
+
+            updateTime();
+
+            console.log("활성화: 지도 다시 표시");
+
+        }
+
+    }
+);
+
+
+// ========================================
+// 13. RTIRL 실시간 GPS 수신
+
+firebaseRef.on(
+    "value",
+    function(snapshot){
+
+        const data = snapshot.val();
+
+        if(!data) return;
+
+        const location = data.location || data;
+
+        processLocation(location);
+
+    },
+    function(error){
+
+        console.error("Firebase 연결 오류:",error);
+
+    }
+);
+
+console.log("RTIRL 위치 수신 대기 중");
 
 </script>
-
 </body>
 </html>
